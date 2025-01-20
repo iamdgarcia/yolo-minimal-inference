@@ -1,0 +1,61 @@
+name: Auto Release
+
+on:
+  push:
+    paths:
+      - "pyproject.toml"
+
+jobs:
+  detect-version:
+    name: Detect Version Change
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.11
+
+    - name: Install dependencies
+      run: pip install toml
+
+    - name: Extract Version from pyproject.toml
+      id: version
+      run: |
+        import toml
+        import re
+
+        # Load the pyproject.toml file
+        with open("pyproject.toml", "r") as f:
+            pyproject = toml.load(f)
+
+        # Extract the version
+        version = pyproject["tool"]["poetry"]["version"]
+
+        # Get the latest Git tag
+        import subprocess
+        try:
+            latest_tag = subprocess.check_output(["git", "describe", "--tags", "--abbrev=0"]).strip().decode()
+        except subprocess.CalledProcessError:
+            latest_tag = "v0.0.0"
+
+        # Compare versions
+        if version != latest_tag.lstrip("v"):
+            print(f"::set-output name=needs_release::true")
+            print(f"::set-output name=version::{version}")
+        else:
+            print(f"::set-output name=needs_release::false")
+
+    - name: Create GitHub Release
+      if: steps.version.outputs.needs_release == 'true'
+      uses: ncipollo/release-action@v1
+      with:
+        tag: v${{ steps.version.outputs.version }}
+        releaseName: v${{ steps.version.outputs.version }}
+        body: |
+          ## Changes in v${{ steps.version.outputs.version }}
+          Automatically generated release based on version update in `pyproject.toml`.
+        prerelease: false
