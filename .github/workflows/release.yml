@@ -1,9 +1,9 @@
 name: Auto Release
 
 on:
-  # push:
-  #   paths:
-  #     - "pyproject.toml"
+  push:
+    paths:
+      - "pyproject.toml"
 
 jobs:
   detect-version:
@@ -22,32 +22,9 @@ jobs:
     - name: Install dependencies
       run: pip install toml
 
-    - name: Extract Version from pyproject.toml
+    - name: Detect Version
       id: version
-      run: |
-        import toml
-        import re
-
-        # Load the pyproject.toml file
-        with open("pyproject.toml", "r") as f:
-            pyproject = toml.load(f)
-
-        # Extract the version
-        version = pyproject["tool"]["poetry"]["version"]
-
-        # Get the latest Git tag
-        import subprocess
-        try:
-            latest_tag = subprocess.check_output(["git", "describe", "--tags", "--abbrev=0"]).strip().decode()
-        except subprocess.CalledProcessError:
-            latest_tag = "v0.0.0"
-
-        # Compare versions
-        if version != latest_tag.lstrip("v"):
-            print(f"::set-output name=needs_release::true")
-            print(f"::set-output name=version::{version}")
-        else:
-            print(f"::set-output name=needs_release::false")
+      run: python scripts/detect_version.py
 
     - name: Create GitHub Release
       if: steps.version.outputs.needs_release == 'true'

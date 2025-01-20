@@ -9,7 +9,7 @@ def main():
     model_path, image_path = sys.argv[1], sys.argv[2]
 
     # Load the model
-    yolo = YOLO(model_path)
+    yolo = YOLO(model_path,is_brg=False)
 
     # Read the image
     image = imread(image_path)

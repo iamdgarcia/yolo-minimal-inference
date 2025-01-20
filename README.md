@@ -38,17 +38,17 @@ Download YOLO models in ONNX format from:
 ### 2. **Example Usage**
 
 ```python
-import cv2
+from imageio import imread
 from yolo_minimal_inference import YOLO
 
 # Path to the ONNX model
 model_path = "path/to/yolov5.onnx"
 
 # Initialize YOLO model
-yolo = YOLO(model_path, conf_thres=0.5, iou_thres=0.4)
+yolo = YOLO(model_path, conf_thres=0.5, iou_thres=0.4,is_bgr=False)
 
 # Load an image
-image = cv2.imread("path/to/image.jpg")
+image = imread("path/to/image.jpg")
 
 # Perform inference
 results = yolo(image)
