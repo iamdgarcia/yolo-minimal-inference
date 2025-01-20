@@ -1,7 +1,6 @@
 import sys
-import cv2
+from imageio import imread
 from yolo_minimal_inference.yolo import YOLO
-
 def main():
     if len(sys.argv) != 3:
         print("Usage: python -m yolo_minimal_inference <model_path> <image_path>")
@@ -13,7 +12,7 @@ def main():
     yolo = YOLO(model_path)
 
     # Read the image
-    image = cv2.imread(image_path)
+    image = imread(image_path)
     if image is None:
         print(f"Error: Unable to read image at {image_path}")
         sys.exit(1)

@@ -1,9 +1,8 @@
 import time
-import cv2
 import numpy as np
 import onnxruntime
 from yolo_minimal_inference.utils import xywh2xyxy, nms
-
+from yolo_minimal_inference import cv
 class Boxes:
     xyxy: np.array = []
     conf : np.array = []
@@ -12,10 +11,11 @@ class Boxes:
 class YOLO:
     input_width : int = 640
     input_height : int = 640
-    def __init__(self, path, conf_thres=0.7, iou_thres=0.5):
+    is_bgr : bool = True
+    def __init__(self, path, conf_thres=0.7, iou_thres=0.5,is_brg=False):
         self.conf_threshold = conf_thres
         self.iou_threshold = iou_thres
-
+        self.is_bgr = is_brg
         # Initialize model
         self.initialize_model(path)
 
@@ -37,29 +37,31 @@ class YOLO:
         start = time.perf_counter()
 
         input_tensor = self.prepare_input(image)
-        # print(f"preproc time: {(time.perf_counter() - start)*1000:.2f} ms")
+        print(f"preproc time: {(time.perf_counter() - start)*1000:.2f} ms")
 
         # Perform inference on the image
         start = time.perf_counter()
 
         outputs = self.inference(input_tensor)
-        # print(f"Inference time: {(time.perf_counter() - start)*1000:.2f} ms")
+        print(f"Inference time: {(time.perf_counter() - start)*1000:.2f} ms")
 
         start = time.perf_counter()
 
         proc_output = self.process_output(outputs)
-        # print(f"postproc time: {(time.perf_counter() - start)*1000:.2f} ms")
+        print(f"postproc time: {(time.perf_counter() - start)*1000:.2f} ms")
 
         return  proc_output
 
-
+    
+    
     def prepare_input(self, image):
         self.img_height, self.img_width = image.shape[:2]
-
-        input_img = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
+        if self.is_bgr:
+            input_img = image[:, :, ::-1]
+        else:
+            input_img = image
         # Resize input image
-        input_img = cv2.resize(input_img, (self.input_width, self.input_height))
+        input_img = cv.resize(input_img, (self.input_width, self.input_height))
 
         # Scale input pixel values to 0 to 1
         input_img = input_img / 255.0
@@ -84,9 +86,6 @@ class YOLO:
         predictions = predictions[scores > self.conf_threshold, :]
         scores = scores[scores > self.conf_threshold]
 
-        # if len(scores) == 0:
-        #     return results
-
         # Get the class with the highest confidence
         class_ids = np.argmax(predictions[:, 4:], axis=1)
 
@@ -102,20 +101,12 @@ class YOLO:
         return results
 
     def extract_boxes(self, predictions):
-        # Extract boxes from predictions
         boxes = predictions[:, :4]
-
-        # Scale boxes to original image dimensions
         boxes = self.rescale_boxes(boxes)
-
-        # Convert boxes to xyxy format
         boxes = xywh2xyxy(boxes)
-
         return boxes
 
     def rescale_boxes(self, boxes):
-
-        # Rescale boxes to original image dimensions
         input_shape = np.array([self.input_width, self.input_height, self.input_width, self.input_height])
         boxes = np.divide(boxes, input_shape, dtype=np.float32)
         boxes *= np.array([self.img_width, self.img_height, self.img_width, self.img_height])
