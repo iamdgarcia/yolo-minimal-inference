@@ -108,13 +108,13 @@ Desktop.ini
 $RECYCLE.BIN/
 
 # Compiled static files
-static/
+# static/
 *.lock
 
-# Test models and static files for testing
-tests/static/model.onnx
-tests/static/*.jpg
-tests/static/*.png
+# # Test models and static files for testing
+# tests/static/model.onnx
+# tests/static/*.jpg
+# tests/static/*.png
 
 # PyCharm specific
 .idea/
