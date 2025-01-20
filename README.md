@@ -1,7 +1,3 @@
-Here's the updated `README.md` reflecting the correct package and repository names:
-
----
-
 # YOLO Minimal Inference Library
 
 ![License](https://img.shields.io/badge/license-MIT-blue)
@@ -177,7 +173,3 @@ For support or inquiries:
 Special thanks to the following resources:
 - [ONNX Runtime](https://onnxruntime.ai/)
 - [Ultralytics YOLO](https://github.com/ultralytics)
-
----
-
-Let me know if you need any more refinements or additions! 🚀
