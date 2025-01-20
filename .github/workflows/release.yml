@@ -1,9 +1,9 @@
 name: Auto Release
 
 on:
-  push:
-    paths:
-      - "pyproject.toml"
+  # push:
+  #   paths:
+  #     - "pyproject.toml"
 
 jobs:
   detect-version:
