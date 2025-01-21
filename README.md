@@ -1,7 +1,7 @@
 # YOLO Minimal Inference Library
 
 ![License](https://img.shields.io/badge/license-MIT-blue)
-![Python Version](https://img.shields.io/badge/python-3.11%2B-brightgreen)
+![Python Version](https://img.shields.io/badge/python-3.9%2B-brightgreen)
 ![Build Status](https://github.com/iamdgarcia/yolo-minimal-inference/actions/workflows/ci.yml/badge.svg)
 
 **YOLO Minimal Inference Library** is a lightweight Python package designed for efficient and minimal YOLO object detection using ONNX Runtime. This library extracts the essential components for YOLO inference from the Ultralytics library, offering a streamlined alternative for those who need a simple, no-frills solution for YOLO inference.

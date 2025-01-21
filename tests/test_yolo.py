@@ -10,7 +10,7 @@ TEST_IMAGE_PATH = "tests/static/zidane.jpg"
 @pytest.fixture
 def yolo_model():
     """Fixture to initialize the YOLO model."""
-    return YOLO(MODEL_PATH, conf_thres=0.5, iou_thres=0.4,is_brg=False)
+    return YOLO(MODEL_PATH, conf_thres=0.5, iou_thres=0.4,is_bgr=False)
 
 def test_model_initialization(yolo_model):
     """Test if the YOLO model initializes correctly."""
