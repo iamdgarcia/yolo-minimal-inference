@@ -9,6 +9,8 @@ jobs:
   detect-version:
     name: Detect Version Change
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Grant write permissions to create releases
 
     steps:
     - name: Checkout repository
