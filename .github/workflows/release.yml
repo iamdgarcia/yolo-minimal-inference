@@ -11,6 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write  # Grant write permissions to create releases
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
 
     steps:
     - name: Checkout repository
@@ -19,7 +22,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: 3.11
+        python-version: ${{ matrix.python-version }}
 
     - name: Install dependencies
       run: pip install toml
@@ -29,7 +32,7 @@ jobs:
       run: python scripts/detect_version.py
 
     - name: Create GitHub Release
-      if: steps.version.outputs.needs_release == 'true'
+      if: ${{ matrix.python-version == '3.11' && steps.version.outputs.needs_release == 'true' }}
       uses: ncipollo/release-action@v1
       with:
         tag: v${{ steps.version.outputs.version }}
@@ -37,4 +40,4 @@ jobs:
         body: |
           ## Changes in v${{ steps.version.outputs.version }}
           Automatically generated release based on version update in `pyproject.toml`.
-        prerelease: false
+        prerelea
