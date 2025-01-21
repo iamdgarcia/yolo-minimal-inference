@@ -1,29 +1,49 @@
 import numpy as np
 
-def nms(boxes, scores, iou_threshold):
-    # Sort by score
-    sorted_indices = np.argsort(scores)[::-1]
+def nms(boxes: np.ndarray, scores: np.ndarray, iou_threshold: float) -> list:
+    """
+    Perform Non-Maximum Suppression (NMS) on bounding boxes.
 
+    Args:
+        boxes (np.ndarray): Array of bounding boxes in (x1, y1, x2, y2) format.
+        scores (np.ndarray): Confidence scores for each bounding box.
+        iou_threshold (float): IoU threshold for suppression.
+
+    Returns:
+        list: Indices of the boxes to keep after NMS.
+    """
+    # Sort boxes by confidence scores in descending order
+    sorted_indices = np.argsort(scores)[::-1]
     keep_boxes = []
+
     while sorted_indices.size > 0:
-        # Pick the last box
+        # Select the box with the highest score and add its index to keep_boxes
         box_id = sorted_indices[0]
         keep_boxes.append(box_id)
 
-        # Compute IoU of the picked box with the rest
-        ious = compute_iou(boxes[box_id, :], boxes[sorted_indices[1:], :])
+        # Compute IoU of the selected box with the rest
+        ious = compute_iou(boxes[box_id], boxes[sorted_indices[1:]])
 
-        # Remove boxes with IoU over the threshold
+        # Filter out boxes with IoU above the threshold
         keep_indices = np.where(ious < iou_threshold)[0]
 
-        # print(keep_indices.shape, sorted_indices.shape)
+        # Update the sorted indices (shift by 1 to exclude the picked box)
         sorted_indices = sorted_indices[keep_indices + 1]
 
     return keep_boxes
 
+def compute_iou(box: np.ndarray, boxes: np.ndarray) -> np.ndarray:
+    """
+    Compute the Intersection over Union (IoU) between a box and a set of boxes.
 
-def compute_iou(box, boxes):
-    # Compute xmin, ymin, xmax, ymax for both boxes
+    Args:
+        box (np.ndarray): Single bounding box in (x1, y1, x2, y2) format.
+        boxes (np.ndarray): Array of bounding boxes in (x1, y1, x2, y2) format.
+
+    Returns:
+        np.ndarray: Array of IoU values.
+    """
+    # Compute coordinates of the intersection rectangle
     xmin = np.maximum(box[0], boxes[:, 0])
     ymin = np.maximum(box[1], boxes[:, 1])
     xmax = np.minimum(box[2], boxes[:, 2])
@@ -32,22 +52,30 @@ def compute_iou(box, boxes):
     # Compute intersection area
     intersection_area = np.maximum(0, xmax - xmin) * np.maximum(0, ymax - ymin)
 
-    # Compute union area
+    # Compute areas of individual boxes
     box_area = (box[2] - box[0]) * (box[3] - box[1])
     boxes_area = (boxes[:, 2] - boxes[:, 0]) * (boxes[:, 3] - boxes[:, 1])
+
+    # Compute union area
     union_area = box_area + boxes_area - intersection_area
 
     # Compute IoU
     iou = intersection_area / union_area
-
     return iou
 
+def xywh2xyxy(bboxes: np.ndarray) -> np.ndarray:
+    """
+    Convert bounding boxes from (x, y, w, h) format to (x1, y1, x2, y2) format.
 
-def xywh2xyxy(x):
-    # Convert bounding box (x, y, w, h) to bounding box (x1, y1, x2, y2)
-    y = np.copy(x)
-    y[..., 0] = x[..., 0] - x[..., 2] / 2
-    y[..., 1] = x[..., 1] - x[..., 3] / 2
-    y[..., 2] = x[..., 0] + x[..., 2] / 2
-    y[..., 3] = x[..., 1] + x[..., 3] / 2
-    return y
+    Args:
+        bboxes (np.ndarray): Array of bounding boxes in (x, y, w, h) format.
+
+    Returns:
+        np.ndarray: Array of bounding boxes in (x1, y1, x2, y2) format.
+    """
+    converted_bboxes = np.copy(bboxes)
+    converted_bboxes[..., 0] = bboxes[..., 0] - bboxes[..., 2] / 2  # x1
+    converted_bboxes[..., 1] = bboxes[..., 1] - bboxes[..., 3] / 2  # y1
+    converted_bboxes[..., 2] = bboxes[..., 0] + bboxes[..., 2] / 2  # x2
+    converted_bboxes[..., 3] = bboxes[..., 1] + bboxes[..., 3] / 2  # y2
+    return converted_bboxes

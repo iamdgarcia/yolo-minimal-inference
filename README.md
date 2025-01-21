@@ -59,33 +59,30 @@ for box, conf, cls in zip(results.xyxy, results.conf, results.cls):
 ```
 
 ---
-
-## TODOs and Progress
+## **TODOs and Progress**
 
 This package is under active development. Below is a summary of the work done and the planned next steps:
 
-### **Completed**
-- Basic implementation of YOLO inference pipeline:
-  - Model initialization with ONNX Runtime.
-  - Preprocessing input images (resizing, normalization).
-  - Running inference on CPU and GPU (if available).
-  - Postprocessing results (Non-Maximum Suppression, confidence filtering).
-- Integration with Pytest for unit tests.
-- Initial CI/CD setup with GitHub Actions.
-- Documentation for installation and usage.
-
-### **Next Steps**
-- Add support for batch inference.
-- Implement error handling for corrupted or unsupported model files.
-- Add a benchmarking utility to measure inference speed on different devices.
-- Improve compatibility with more YOLO model variations (e.g., YOLOv8).
-- Enhance postprocessing for customizable outputs (e.g., drawing bounding boxes).
-- Add visualization utilities to display detections on images/videos.
-- Expand test coverage for edge cases:
-  - Corrupted images or unsupported formats.
-  - Invalid model paths.
-  - Custom confidence and IoU thresholds.
-- Publish an example notebook showcasing library usage.
+- [x] Basic implementation of YOLO inference pipeline:
+  - [x] Model initialization with ONNX Runtime.
+  - [x] Preprocessing input images (resizing, normalization).
+  - [x] Running inference on CPU.
+  - [x] Postprocessing results (Non-Maximum Suppression, confidence filtering).
+- [x] Integration with Pytest for unit tests.
+- [x] Initial CI/CD setup with GitHub Actions.
+- [x] Documentation for installation and usage.
+- [ ] Add support for batch inference.
+- [ ] Implement error handling for corrupted or unsupported model files.Currently only str check.
+- [ ] Add GPU support.
+- [ ] Add classification and segmentation functionalities.
+- [ ] Add new interpolation methods for resizing. Replicate opencv.
+- [ ] Expand test coverage for edge cases:
+  - [ ] Corrupted images or unsupported formats.
+  - [ ] Invalid model paths.
+  - [ ] Custom confidence and IoU thresholds.
+- [ ] Publish an example notebook showcasing library usage.
+- [ ] Integrate into serverless platforms like AWS Lambda.
+- [ ] Example pt to onnx converter.
 
 If you have suggestions or feature requests, feel free to open an issue in the repository.
 

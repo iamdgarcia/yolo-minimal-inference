@@ -1,140 +1,160 @@
 import time
+import logging
 from imageio import imread
 import numpy as np
 import onnxruntime
 from yolo_minimal_inference.utils import xywh2xyxy, nms
 from yolo_minimal_inference import cv
-import logging
-class Boxes:
-    xyxy: np.array = []
-    conf : np.array = []
-    cls : np.array = []
 
+
+class Boxes:
+    """Container for YOLO detection results."""
+    xyxy: np.ndarray = []  # Bounding boxes in xyxy format
+    conf: np.ndarray = []  # Confidence scores
+    cls: np.ndarray = []  # Class IDs
 
 
 class YOLO:
-    input_width : int = 640
-    input_height : int = 640
-    is_bgr : bool = True
-    verbose: bool = False
-    preproc_time : float = 0
-    inference_time : float = 0
-    postproc_time : float = 0
+    """
+    Minimal YOLO inference pipeline using ONNX Runtime.
 
-    def __init__(self, path, conf_thres=0.7, iou_thres=0.5,is_brg=False,verbose=False):
+    Args:
+        path (str): Path to the ONNX model file.
+        conf_thres (float): Confidence threshold for filtering detections.
+        iou_thres (float): IoU threshold for Non-Maximum Suppression.
+        is_bgr (bool): Whether input images are in BGR format.
+        verbose (bool): Enable logging for processing times.
+    """
+
+    def __init__(self, path: str, conf_thres: float = 0.7, iou_thres: float = 0.5, is_bgr: bool = False, verbose: bool = False):
+        self.input_width: int = 640
+        self.input_height: int = 640
         self.conf_threshold = conf_thres
         self.iou_threshold = iou_thres
-        self.is_bgr = is_brg
+        self.is_bgr = is_bgr
         self.verbose = verbose
-        # Initialize model
+        self.preproc_time: float = 0
+        self.inference_time: float = 0
+        self.postproc_time: float = 0
+
+        self.session = None
+        self.input_names = []
+        self.output_names = []
+
         self.initialize_model(path)
 
     def __call__(self, image):
+        """
+        Perform inference on a given image.
+
+        Args:
+            image (str or np.ndarray): Path to the image or the image array.
+
+        Returns:
+            Boxes: Processed YOLO detections.
+        """
         if isinstance(image, str):
             image = imread(image)
         return self.detect_objects(image)
 
-
-    def initialize_model(self, path):
+    def initialize_model(self, path: str):
+        """Initialize the ONNX model session."""
         providers = ['CPUExecutionProvider']
-        #TODO only add torch if GPU
-        # if torch.cuda.is_available():
-        #     providers.insert(0, 'CUDAExecutionProvider')
-        self.session = onnxruntime.InferenceSession(path,providers=providers)
-        # self.is_quantized = self.model_is_quantized()        # Get model info
+        self.session = onnxruntime.InferenceSession(path, providers=providers)
         self.get_input_details()
         self.get_output_details()
 
-    def detect_objects(self, image):
+    def detect_objects(self, image: np.ndarray) -> Boxes:
+        """Detect objects in the input image."""
         if self.verbose:
             start = time.perf_counter()
 
         input_tensor = self.prepare_input(image)
+
         if self.verbose:
-            self.preproc_time =(time.perf_counter() - start)*1000
+            self.preproc_time = (time.perf_counter() - start) * 1000
             start = time.perf_counter()
 
         outputs = self.inference(input_tensor)
 
         if self.verbose:
-            self.inference_time =(time.perf_counter() - start)*1000
+            self.inference_time = (time.perf_counter() - start) * 1000
             start = time.perf_counter()
 
-        proc_output = self.process_output(outputs)
+        results = self.process_output(outputs)
+
         if self.verbose:
-            self.postproc_time =(time.perf_counter() - start)*1000
-            logging.info(f"Execution time: Preproc: {self.preproc_time:.2f} ms Inference: {self.inference_time:.2f} ms Postproc: {self.postproc_time:.2f} ms")
+            self.postproc_time = (time.perf_counter() - start) * 1000
+            logging.info(
+                f"Execution time: Preprocessing: {self.preproc_time:.2f} ms, "
+                f"Inference: {self.inference_time:.2f} ms, "
+                f"Postprocessing: {self.postproc_time:.2f} ms"
+            )
 
-        return  proc_output
+        return results
 
-    
-    
-    def prepare_input(self, image):
+    def prepare_input(self, image: np.ndarray) -> np.ndarray:
+        """Prepare the input image for the YOLO model."""
         self.img_height, self.img_width = image.shape[:2]
+
+        # Convert BGR to RGB if necessary
         if self.is_bgr:
-            input_img = image[:, :, ::-1]
-        else:
-            input_img = image
-        # Resize input image
-        input_img = cv.resize(input_img, (self.input_width, self.input_height))
+            image = image[:, :, ::-1]
 
-        # Scale input pixel values to 0 to 1
+        # Resize and normalize the image
+        input_img = cv.resize(image, (self.input_width, self.input_height))
         input_img = input_img / 255.0
-        input_img = input_img.transpose(2, 0, 1)
-        input_tensor = input_img[np.newaxis, :, :, :].astype(np.float32)
+        input_img = input_img.transpose(2, 0, 1)  # Convert to channel-first
 
-        return input_tensor
+        return input_img[np.newaxis, :, :, :].astype(np.float32)
 
+    def inference(self, input_tensor: np.ndarray) -> list:
+        """Run inference on the input tensor."""
+        return self.session.run(self.output_names, {self.input_names[0]: input_tensor})
 
-    def inference(self, input_tensor):
-        outputs = self.session.run(self.output_names, {self.input_names[0]: input_tensor})
-
-        return outputs
-
-    def process_output(self, output):
+    def process_output(self, output: list) -> Boxes:
+        """Process the raw model output into structured detections."""
         results = Boxes()
-
         predictions = np.squeeze(output[0]).T
 
-        # Filter out object confidence scores below threshold
+        # Filter by confidence threshold
         scores = np.max(predictions[:, 4:], axis=1)
-        predictions = predictions[scores > self.conf_threshold, :]
-        scores = scores[scores > self.conf_threshold]
+        valid_indices = scores > self.conf_threshold
+        predictions = predictions[valid_indices]
+        scores = scores[valid_indices]
 
-        # Get the class with the highest confidence
+        # Get class IDs and bounding boxes
         class_ids = np.argmax(predictions[:, 4:], axis=1)
-
-        # Get bounding boxes for each object
         boxes = self.extract_boxes(predictions)
 
-        # Apply non-maxima suppression to suppress weak, overlapping bounding boxes
+        # Apply Non-Maximum Suppression
         indices = nms(boxes, scores, self.iou_threshold)
 
-        results.xyxy =  boxes[indices]
+        results.xyxy = boxes[indices]
         results.conf = scores[indices]
         results.cls = class_ids[indices]
         return results
 
-    def extract_boxes(self, predictions):
+    def extract_boxes(self, predictions: np.ndarray) -> np.ndarray:
+        """Extract and rescale bounding boxes."""
         boxes = predictions[:, :4]
-        boxes = self.rescale_boxes(boxes)
-        boxes = xywh2xyxy(boxes)
-        return boxes
+        return xywh2xyxy(self.rescale_boxes(boxes))
 
-    def rescale_boxes(self, boxes):
-        input_shape = np.array([self.input_width, self.input_height, self.input_width, self.input_height])
-        boxes = np.divide(boxes, input_shape, dtype=np.float32)
-        boxes *= np.array([self.img_width, self.img_height, self.img_width, self.img_height])
-        return boxes
+    def rescale_boxes(self, boxes: np.ndarray) -> np.ndarray:
+        """Rescale bounding boxes to the original image dimensions."""
+        input_shape = np.array([self.input_width, self.input_height] * 2)
+        scale_factors = np.array([self.img_width, self.img_height] * 2)
+        return boxes / input_shape * scale_factors
 
     def get_input_details(self):
+        """Retrieve input details from the ONNX model."""
         model_inputs = self.session.get_inputs()
-        self.input_names = [model_inputs[i].name for i in range(len(model_inputs))]
-
+        self.input_names = [input.name for input in model_inputs]
         self.input_shape = model_inputs[0].shape
         self.input_height = self.input_shape[2]
         self.input_width = self.input_shape[3]
 
     def get_output_details(self):
+        """Retrieve output details from the ONNX model."""
         model_outputs = self.session.get_outputs()
-        self.output_names = [model_outputs[i].name for i in range(len(model_outputs))]
+        self.output_names = [output.name for output in model_outputs]
