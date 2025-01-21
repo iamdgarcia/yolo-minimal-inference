@@ -10,9 +10,6 @@ jobs:
   build:
     name: Build Package
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.8", "3.9", "3.10", "3.11"]  # Add supported Python versions
 
     steps:
     - name: Checkout code
@@ -21,8 +18,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
-        python-version: ${{ matrix.python-version }}
-
+        python-version: 3.11
     - name: Cache Poetry dependencies
       uses: actions/cache@v3
       with:
@@ -40,5 +36,5 @@ jobs:
     - name: Upload Build Artifacts
       uses: actions/upload-artifact@v3
       with:
-        name: dist-${{ matrix.python-version }}
+        name: dist
         path: dist/

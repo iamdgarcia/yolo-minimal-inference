@@ -6,7 +6,7 @@ authors = ["Daniel García Peña <info@iamdgarcia.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.11"
+python = ">=3.9,<4.0" 
 onnxruntime = "^1.20.1"
 imageio = "^2.37.0"
 
