@@ -4,19 +4,28 @@ import numpy as np
 import onnxruntime
 from yolo_minimal_inference.utils import xywh2xyxy, nms
 from yolo_minimal_inference import cv
+import logging
 class Boxes:
     xyxy: np.array = []
     conf : np.array = []
     cls : np.array = []
 
+
+
 class YOLO:
     input_width : int = 640
     input_height : int = 640
     is_bgr : bool = True
-    def __init__(self, path, conf_thres=0.7, iou_thres=0.5,is_brg=False):
+    verbose: bool = False
+    preproc_time : float = 0
+    inference_time : float = 0
+    postproc_time : float = 0
+
+    def __init__(self, path, conf_thres=0.7, iou_thres=0.5,is_brg=False,verbose=False):
         self.conf_threshold = conf_thres
         self.iou_threshold = iou_thres
         self.is_bgr = is_brg
+        self.verbose = verbose
         # Initialize model
         self.initialize_model(path)
 
@@ -37,21 +46,24 @@ class YOLO:
         self.get_output_details()
 
     def detect_objects(self, image):
-        start = time.perf_counter()
+        if self.verbose:
+            start = time.perf_counter()
 
         input_tensor = self.prepare_input(image)
-        print(f"preproc time: {(time.perf_counter() - start)*1000:.2f} ms")
-
-        # Perform inference on the image
-        start = time.perf_counter()
+        if self.verbose:
+            self.preproc_time =(time.perf_counter() - start)*1000
+            start = time.perf_counter()
 
         outputs = self.inference(input_tensor)
-        print(f"Inference time: {(time.perf_counter() - start)*1000:.2f} ms")
 
-        start = time.perf_counter()
+        if self.verbose:
+            self.inference_time =(time.perf_counter() - start)*1000
+            start = time.perf_counter()
 
         proc_output = self.process_output(outputs)
-        print(f"postproc time: {(time.perf_counter() - start)*1000:.2f} ms")
+        if self.verbose:
+            self.postproc_time =(time.perf_counter() - start)*1000
+            logging.info(f"Execution time: Preproc: {self.preproc_time:.2f} ms Inference: {self.inference_time:.2f} ms Postproc: {self.postproc_time:.2f} ms")
 
         return  proc_output
 
