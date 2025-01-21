@@ -1,4 +1,5 @@
 import time
+from imageio import imread
 import numpy as np
 import onnxruntime
 from yolo_minimal_inference.utils import xywh2xyxy, nms
@@ -20,6 +21,8 @@ class YOLO:
         self.initialize_model(path)
 
     def __call__(self, image):
+        if isinstance(image, str):
+            image = imread(image)
         return self.detect_objects(image)
 
 
