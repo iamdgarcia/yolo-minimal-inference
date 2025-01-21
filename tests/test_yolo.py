@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from yolo_minimal_inference.yolo import YOLO
+from yolo_minimal_inference import YOLO
 from imageio import imread
 
 # Constants for testing

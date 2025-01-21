@@ -1,1 +1,1 @@
-from yolo_minimal_inference import YOLO
+from yolo_minimal_inference.yolo import YOLO
