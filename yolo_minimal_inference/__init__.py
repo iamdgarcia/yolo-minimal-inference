@@ -1,0 +1,1 @@
+from yolo_minimal_inference import YOLO
