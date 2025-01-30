@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "yolo-minimal-inference"
-version = "0.1.6"
+version = "0.1.7"
 description = "A Python package to run YOLO models using ONNX Runtime"
 authors = ["Daniel García Peña <info@iamdgarcia.com>"]
 readme = "README.md"

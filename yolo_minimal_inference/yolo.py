@@ -54,7 +54,7 @@ class YOLO:
             Boxes: Processed YOLO detections.
         """
         if isinstance(image, str):
-            image = imread(image)
+            image = imread(image, pilmode='RGB')
         return self.detect_objects(image)
 
     def initialize_model(self, path: str):
