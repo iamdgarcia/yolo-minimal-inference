@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 from yolo_minimal_inference import YOLO
-from imageio import imread
+from imageio.v2 import imread
 
 # Constants for testing
 MODEL_PATH = "tests/static/yolov8n.onnx"
@@ -40,6 +40,13 @@ def test_inference(yolo_model):
 def test_4_channel_image(yolo_model):
     """Test the inference step with the model."""
     test_image = np.zeros((150,150,4))
+    input_tensor = yolo_model.prepare_input(test_image)
+    outputs = yolo_model.inference(input_tensor)
+    assert True
+
+def test_batch_image(yolo_model):
+    """Test the inference step with the model."""
+    test_image = np.zeros((2,150,150,3))
     input_tensor = yolo_model.prepare_input(test_image)
     outputs = yolo_model.inference(input_tensor)
     assert True

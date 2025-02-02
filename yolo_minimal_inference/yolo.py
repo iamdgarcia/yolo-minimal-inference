@@ -1,6 +1,6 @@
 import time
 import logging
-from imageio import imread
+from imageio.v2 import imread
 import numpy as np
 import onnxruntime
 from yolo_minimal_inference.utils import xywh2xyxy, nms
@@ -95,23 +95,46 @@ class YOLO:
 
     def prepare_input(self, image: np.ndarray) -> np.ndarray:
         """Prepare the input image for the YOLO model."""
-        self.img_height, self.img_width, dims  = image.shape[:3]
+        if len(image.shape)==3:
+            image= image[np.newaxis, :, :, :]
+            
+        _ ,self.img_height, self.img_width, dims  = image.shape
         if dims >3:
-            image = image[:,:,:3]
+            image = image[:,:,:,:3]
         # Convert BGR to RGB if necessary
         if self.is_bgr:
-            image = image[:, :, ::-1]
+            image = image[:,:, :, ::-1]
 
         # Resize and normalize the image
         input_img = cv.resize(image, (self.input_width, self.input_height))
         input_img = input_img / 255.0
-        input_img = input_img.transpose(2, 0, 1)  # Convert to channel-first
+        input_img = input_img.transpose(0,3, 1, 2)  # Convert to channel-first
 
-        return input_img[np.newaxis, :, :, :].astype(np.float32)
+        return input_img.astype(np.float32)
+
 
     def inference(self, input_tensor: np.ndarray) -> list:
-        """Run inference on the input tensor."""
-        return self.session.run(self.output_names, {self.input_names[0]: input_tensor})
+        """Run inference on the input tensor, handling batch size manually if necessary."""
+        
+        batch_size = input_tensor.shape[0]
+        expected_batch_size = self.input_shape[0]  # Expected batch size from the model
+        
+        if expected_batch_size == batch_size:
+            # If the batch size matches, run inference directly
+            return self.session.run(self.output_names, {self.input_names[0]: input_tensor})
+        
+        results = []
+        
+        # Process each item in the batch separately
+        for i in range(batch_size):
+            batch_result = self.session.run(self.output_names, {self.input_names[0]: input_tensor[i:i+1]})
+            results.append(batch_result)
+        
+        # Merge the results into the expected output format
+        merged_results = [np.concatenate([r[i] for r in results], axis=0) for i in range(len(self.output_names))]
+        
+        return merged_results
+
 
     def process_output(self, output: list) -> Boxes:
         """Process the raw model output into structured detections."""
