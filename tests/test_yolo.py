@@ -36,6 +36,14 @@ def test_inference(yolo_model):
     assert len(outputs) > 0, "No outputs from model inference."
     assert all(isinstance(output, np.ndarray) for output in outputs), "Model outputs should be NumPy arrays."
 
+
+def test_4_channel_image(yolo_model):
+    """Test the inference step with the model."""
+    test_image = np.zeros((150,150,4))
+    input_tensor = yolo_model.prepare_input(test_image)
+    outputs = yolo_model.inference(input_tensor)
+    assert True
+
 def test_process_output(yolo_model):
     """Test the output processing step."""
     test_image = imread(TEST_IMAGE_PATH)

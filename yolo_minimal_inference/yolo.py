@@ -95,8 +95,9 @@ class YOLO:
 
     def prepare_input(self, image: np.ndarray) -> np.ndarray:
         """Prepare the input image for the YOLO model."""
-        self.img_height, self.img_width = image.shape[:2]
-
+        self.img_height, self.img_width, dims  = image.shape[:3]
+        if dims >3:
+            image = image[:,:,:3]
         # Convert BGR to RGB if necessary
         if self.is_bgr:
             image = image[:, :, ::-1]
